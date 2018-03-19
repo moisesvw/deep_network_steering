@@ -24,6 +24,9 @@ def generator(samples, batch_size=128, add_flip_image=False):
     samples -- list containing images paths
     batch_size -- size of batch
     add_flip_image -- whether yes or not flip images
+
+    Returns:
+    [X_train, y_train] batch for training
     """
 
     num_samples = len(samples)
@@ -58,3 +61,31 @@ def generator(samples, batch_size=128, add_flip_image=False):
             y_train = np.array(angles)
  
             yield sklearn.utils.shuffle(X_train, y_train)
+
+def normalize_pixels(x):
+    """
+    Normalize image data
+    """
+    return x / 255.0 - 0.5
+
+def train_genarator_model(model, train_generator, steps_per_epoch,
+                          validation_generator, validation_steps, epochs=1):
+    """
+    Train a model with data generators
+    Arguments:
+    model -- Keras model
+    train_generator -- data generator for train set
+    steps_per_epoch -- how many steps for training set depends on batch size
+    validation_generator -- data generator for validation set
+    validation_steps -- how many steps for for validation depends on batch size
+    """
+
+    optimizer = optimizers.Adam(lr=0.0006)
+
+    model.compile(loss='mse', optimizer=optimizer)
+    model.fit_generator(train_generator,
+                        steps_per_epoch=steps_per_epoch,
+                        validation_data=validation_generator,
+                        validation_steps=validation_steps,
+                        epochs=epochs)
+    return model
