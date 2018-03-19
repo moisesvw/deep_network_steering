@@ -78,6 +78,9 @@ def train_genarator_model(model, train_generator, steps_per_epoch,
     steps_per_epoch -- how many steps for training set depends on batch size
     validation_generator -- data generator for validation set
     validation_steps -- how many steps for for validation depends on batch size
+
+    Returns:
+    a keras trained model
     """
 
     optimizer = optimizers.Adam(lr=0.0006)
@@ -89,3 +92,31 @@ def train_genarator_model(model, train_generator, steps_per_epoch,
                         validation_steps=validation_steps,
                         epochs=epochs)
     return model
+
+def get_data(all_cameras=False, data_source={"./tmp/driving_log.csv": "./tmp/images/"}):
+    """
+    generates image data base on its data recorded from cameras in simulator
+    Arguments:
+    all_cameras -- whether yes or not should use all of three car cameras or just the center one
+    data_source -- dict contining data
+                    key: path of csv file containing the images path and steering angle
+                    value: directory where the steering images are stored
+    Returns:
+    list of data needed to proceed with training
+    """
+    samples = []
+    CENTER, LEFT, RIGTH, STEERING = 0, 1, 2, 3
+    for path, directory in data_source.items():
+        with open(path) as csvfile:
+            reader = csv.reader(csvfile)
+            next(reader, None)
+            for line in reader:
+                # add Left and Right cameras randomly
+                if all_cameras and random.random() > 0.7:
+                    samples.append([line[CENTER], 'C',line[STEERING], directory ])
+                    samples.append([line[LEFT],   'L',line[STEERING], directory ])
+                    samples.append([line[RIGTH],  'R',line[STEERING], directory ])
+                else:
+                    samples.append([line[CENTER], 'C',line[STEERING], directory ])
+
+    return samples
