@@ -120,3 +120,61 @@ def get_data(all_cameras=False, data_source={"./tmp/driving_log.csv": "./tmp/ima
                     samples.append([line[CENTER], 'C',line[STEERING], directory ])
 
     return samples
+
+def nvida_model():
+    """
+    Implementation of NVIDIA Model base on paper end to end drive steering
+    This model predicts the angle steering given an image from center camera of the car
+    https://arxiv.org/abs/1604.07316
+
+    Returns:
+    model architecture
+    """
+    model = Sequential()
+    model.add(Cropping2D(cropping=((65, 25), (0,0)), input_shape=(160,320,3)))
+    model.add(Lambda(normalize_pixels))
+    model.add(Convolution2D(24, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
+    model.add(Convolution2D(36, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
+    model.add(Convolution2D(48, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
+    model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
+    model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
+    model.add(Flatten())
+    model.add(Dropout(0.5))
+    model.add(Dense(1164))
+    model.add(Dense(100))
+    model.add(Dense(50))
+    model.add(Dense(10))
+    model.add(Dense(1))
+    return model
+
+data_source = {
+    "./track2d/driving_log.csv": "./track2d/",
+}
+
+all_images_data = get_data(all_cameras=True, data_source=data_source)
+train_samples, validation_samples = train_test_split(all_images_data, test_size=0.3)
+validation_samples, test_samples  = train_test_split(validation_samples, test_size=0.5)
+
+generator_batch = 64
+add_flip_image = True 
+
+train_generator = generator(train_samples, batch_size=generator_batch, add_flip_image=add_flip_image)
+validation_generator = generator(validation_samples, batch_size=generator_batch)
+test_generator = generator(test_samples, batch_size=generator_batch)
+
+train_steps      =  ((len(train_samples)*2)/generator_batch) if add_flip_image else len(train_samples)/generator_batch
+validation_steps = len(validation_samples)/generator_batch
+
+model = train_genarator_model(nvida_model(),
+                              train_generator, train_steps,
+                              validation_generator, validation_steps,
+                              epochs=7)
+
+nvda_eval = model.evaluate_generator(test_generator, len(test_samples)/generator_batch)
+print(nvda_eval)
+
+import datetime
+now = datetime.datetime.now()
+model_name = 'track1_nvda_{}_{}.h5'.format(now.hour, now.minute)
+print(model_name)
+model.save(model_name)
