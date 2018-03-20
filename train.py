@@ -1,3 +1,8 @@
+"""This is an implementation of end to end driving steering network
+   it trains the network from raw images collected from Udacity
+   Self Driving Car Simulator.
+"""
+
 import csv
 import cv2
 import numpy as np
@@ -15,10 +20,16 @@ import sklearn
 import pandas as pd
 
 class Train:
-    def __init__(self, log_path, data_path, model_name):
+    def __init__(self, log_path, data_path, model_name, bath_size=64,
+                 epochs=1, flip_images=False):
         self.log_path = log_path
         self.data_path = data_path
+        self.bath_size = bath_size
+        self.epochs = epochs
+        self.flip_images = flip_images
         self.model_name = model_name
+        self.model = None
+        self.model_evaluation = None
 
     def generator(self, samples, batch_size=128, add_flip_image=False):
         """
@@ -162,8 +173,8 @@ class Train:
         train_samples, validation_samples = train_test_split(all_images_data, test_size=0.3)
         validation_samples, test_samples  = train_test_split(validation_samples, test_size=0.5)
 
-        generator_batch = 64
-        add_flip_image = True 
+        generator_batch = self.bath_size
+        add_flip_image = self.flip_images
 
         train_generator = self.generator(train_samples, batch_size=generator_batch, add_flip_image=add_flip_image)
         validation_generator = self.generator(validation_samples, batch_size=generator_batch)
@@ -175,8 +186,10 @@ class Train:
         model = self.train_genarator_model(self.nvida_model(),
                                     train_generator, train_steps,
                                     validation_generator, validation_steps,
-                                    epochs=7)
+                                    epochs=self.epochs)
 
         nvda_eval = model.evaluate_generator(test_generator, len(test_samples)/generator_batch)
-        print(nvda_eval)
+
+        self.model = model
+        self.model_evaluation = nvda_eval 
         model.save(self.model_name)
