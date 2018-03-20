@@ -14,167 +14,176 @@ import random
 import sklearn
 import pandas as pd
 
-def generator(samples, batch_size=128, add_flip_image=False):
-    """
-    Generates random batches of data base on image path samples
-    It could add flipped images if incoming samples contains
-    Left and Rigth cameras images
+class Train:
+    def __init__(self, log_path, data_path):
+        self.log_path = log_path
+        self.data_path = data_path
 
-    Arguments:
-    samples -- list containing images paths
-    batch_size -- size of batch
-    add_flip_image -- whether yes or not flip images
+    def generator(self, samples, batch_size=128, add_flip_image=False):
+        """
+        Generates random batches of data base on image path samples
+        It could add flipped images if incoming samples contains
+        Left and Rigth cameras images
 
-    Returns:
-    [X_train, y_train] batch for training
-    """
+        Arguments:
+        samples -- list containing images paths
+        batch_size -- size of batch
+        add_flip_image -- whether yes or not flip images
 
-    num_samples = len(samples)
-    while True:
-        random.shuffle(samples)
-        for offset in range(0, num_samples, batch_size):
-            batch_samples = samples[offset:offset+batch_size]
+        Returns:
+        [X_train, y_train] batch for training
+        """
 
-            images = []
-            angles = []
-            for batch_sample in batch_samples:
-                data_dir = batch_sample[3].strip()
-                image_path = data_dir + batch_sample[0].strip()
-                image = cv2.imread(image_path)
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
-                steering = float(batch_sample[2])
+        num_samples = len(samples)
+        while True:
+            random.shuffle(samples)
+            for offset in range(0, num_samples, batch_size):
+                batch_samples = samples[offset:offset+batch_size]
 
-                if batch_sample[1] == 'L':
-                    steering+= 0.25
-                elif batch_sample[1] == 'R':
-                    steering-= 0.25
- 
-                images.append(image)
-                angles.append(steering)
+                images = []
+                angles = []
+                for batch_sample in batch_samples:
+                    data_dir = batch_sample[3].strip()
+                    image_path = data_dir + batch_sample[0].strip()
+                    image = cv2.imread(image_path)
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
+                    steering = float(batch_sample[2])
 
-                #Augmentation flip images randomly
-                if add_flip_image and random.random() > 0.5:
-                    images.append(cv2.flip(image, 1))
-                    angles.append(steering * -1.0)
+                    if batch_sample[1] == 'L':
+                        steering+= 0.25
+                    elif batch_sample[1] == 'R':
+                        steering-= 0.25
+    
+                    images.append(image)
+                    angles.append(steering)
 
-            X_train = np.array(images)
-            y_train = np.array(angles)
- 
-            yield sklearn.utils.shuffle(X_train, y_train)
+                    #Augmentation flip images randomly
+                    if add_flip_image and random.random() > 0.5:
+                        images.append(cv2.flip(image, 1))
+                        angles.append(steering * -1.0)
 
-def normalize_pixels(x):
-    """
-    Normalize image data
-    """
-    return x / 255.0 - 0.5
+                X_train = np.array(images)
+                y_train = np.array(angles)
+    
+                yield sklearn.utils.shuffle(X_train, y_train)
 
-def train_genarator_model(model, train_generator, steps_per_epoch,
-                          validation_generator, validation_steps, epochs=1):
-    """
-    Train a model with data generators
-    Arguments:
-    model -- Keras model
-    train_generator -- data generator for train set
-    steps_per_epoch -- how many steps for training set depends on batch size
-    validation_generator -- data generator for validation set
-    validation_steps -- how many steps for for validation depends on batch size
+    def normalize_pixels(self, x):
+        """
+        Normalize image data
+        """
+        return x / 255.0 - 0.5
 
-    Returns:
-    a keras trained model
-    """
+    def train_genarator_model(self, model, train_generator, steps_per_epoch,
+                            validation_generator, validation_steps, epochs=1):
+        """
+        Train a model with data generators
+        Arguments:
+        model -- Keras model
+        train_generator -- data generator for train set
+        steps_per_epoch -- how many steps for training set depends on batch size
+        validation_generator -- data generator for validation set
+        validation_steps -- how many steps for for validation depends on batch size
 
-    optimizer = optimizers.Adam(lr=0.0006)
+        Returns:
+        a keras trained model
+        """
 
-    model.compile(loss='mse', optimizer=optimizer)
-    model.fit_generator(train_generator,
-                        steps_per_epoch=steps_per_epoch,
-                        validation_data=validation_generator,
-                        validation_steps=validation_steps,
-                        epochs=epochs)
-    return model
+        optimizer = optimizers.Adam(lr=0.0006)
 
-def get_data(all_cameras=False, data_source={"./tmp/driving_log.csv": "./tmp/images/"}):
-    """
-    generates image data base on its data recorded from cameras in simulator
-    Arguments:
-    all_cameras -- whether yes or not should use all of three car cameras or just the center one
-    data_source -- dict contining data
-                    key: path of csv file containing the images path and steering angle
-                    value: directory where the steering images are stored
-    Returns:
-    list of data needed to proceed with training
-    """
-    samples = []
-    CENTER, LEFT, RIGTH, STEERING = 0, 1, 2, 3
-    for path, directory in data_source.items():
-        with open(path) as csvfile:
-            reader = csv.reader(csvfile)
-            next(reader, None)
-            for line in reader:
-                # add Left and Right cameras randomly
-                if all_cameras and random.random() > 0.7:
-                    samples.append([line[CENTER], 'C',line[STEERING], directory ])
-                    samples.append([line[LEFT],   'L',line[STEERING], directory ])
-                    samples.append([line[RIGTH],  'R',line[STEERING], directory ])
-                else:
-                    samples.append([line[CENTER], 'C',line[STEERING], directory ])
+        model.compile(loss='mse', optimizer=optimizer)
+        model.fit_generator(train_generator,
+                            steps_per_epoch=steps_per_epoch,
+                            validation_data=validation_generator,
+                            validation_steps=validation_steps,
+                            epochs=epochs)
+        return model
 
-    return samples
+    def get_data(self, all_cameras=False, data_source={"./tmp/driving_log.csv": "./tmp/images/"}):
+        """
+        generates image data base on its data recorded from cameras in simulator
+        Arguments:
+        all_cameras -- whether yes or not should use all of three car cameras or just the center one
+        data_source -- dict contining data
+                        key: path of csv file containing the images path and steering angle
+                        value: directory where the steering images are stored
+        Returns:
+        list of data needed to proceed with training
+        """
+        samples = []
+        CENTER, LEFT, RIGTH, STEERING = 0, 1, 2, 3
+        for path, directory in data_source.items():
+            with open(path) as csvfile:
+                reader = csv.reader(csvfile)
+                next(reader, None)
+                for line in reader:
+                    # add Left and Right cameras randomly
+                    if all_cameras and random.random() > 0.7:
+                        samples.append([line[CENTER], 'C',line[STEERING], directory ])
+                        samples.append([line[LEFT],   'L',line[STEERING], directory ])
+                        samples.append([line[RIGTH],  'R',line[STEERING], directory ])
+                    else:
+                        samples.append([line[CENTER], 'C',line[STEERING], directory ])
 
-def nvida_model():
-    """
-    Implementation of NVIDIA Model base on paper end to end drive steering
-    This model predicts the angle steering given an image from center camera of the car
-    https://arxiv.org/abs/1604.07316
+        return samples
 
-    Returns:
-    model architecture
-    """
-    model = Sequential()
-    model.add(Cropping2D(cropping=((65, 25), (0,0)), input_shape=(160,320,3)))
-    model.add(Lambda(normalize_pixels))
-    model.add(Convolution2D(24, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
-    model.add(Convolution2D(36, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
-    model.add(Convolution2D(48, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
-    model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
-    model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
-    model.add(Flatten())
-    model.add(Dropout(0.5))
-    model.add(Dense(1164))
-    model.add(Dense(100))
-    model.add(Dense(50))
-    model.add(Dense(10))
-    model.add(Dense(1))
-    return model
+    def nvida_model(self):
+        """
+        Implementation of NVIDIA Model base on paper end to end drive steering
+        This model predicts the angle steering given an image from center camera of the car
+        https://arxiv.org/abs/1604.07316
 
-data_source = {
-    "./track2d/driving_log.csv": "./track2d/",
-}
+        Returns:
+        model architecture
+        """
+        model = Sequential()
+        model.add(Cropping2D(cropping=((65, 25), (0,0)), input_shape=(160,320,3)))
+        model.add(Lambda(normalize_pixels))
+        model.add(Convolution2D(24, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
+        model.add(Convolution2D(36, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
+        model.add(Convolution2D(48, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
+        model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
+        model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
+        model.add(Flatten())
+        model.add(Dropout(0.5))
+        model.add(Dense(1164))
+        model.add(Dense(100))
+        model.add(Dense(50))
+        model.add(Dense(10))
+        model.add(Dense(1))
+        return model
 
-all_images_data = get_data(all_cameras=True, data_source=data_source)
-train_samples, validation_samples = train_test_split(all_images_data, test_size=0.3)
-validation_samples, test_samples  = train_test_split(validation_samples, test_size=0.5)
+    def perform(self):
+        pass
 
-generator_batch = 64
-add_flip_image = True 
+    def refactor_to_do(self):
+        data_source = {
+            "./track2d/driving_log.csv": "./track2d/",
+        }
 
-train_generator = generator(train_samples, batch_size=generator_batch, add_flip_image=add_flip_image)
-validation_generator = generator(validation_samples, batch_size=generator_batch)
-test_generator = generator(test_samples, batch_size=generator_batch)
+        all_images_data = get_data(all_cameras=True, data_source=data_source)
+        train_samples, validation_samples = train_test_split(all_images_data, test_size=0.3)
+        validation_samples, test_samples  = train_test_split(validation_samples, test_size=0.5)
 
-train_steps      =  ((len(train_samples)*2)/generator_batch) if add_flip_image else len(train_samples)/generator_batch
-validation_steps = len(validation_samples)/generator_batch
+        generator_batch = 64
+        add_flip_image = True 
 
-model = train_genarator_model(nvida_model(),
-                              train_generator, train_steps,
-                              validation_generator, validation_steps,
-                              epochs=7)
+        train_generator = generator(train_samples, batch_size=generator_batch, add_flip_image=add_flip_image)
+        validation_generator = generator(validation_samples, batch_size=generator_batch)
+        test_generator = generator(test_samples, batch_size=generator_batch)
 
-nvda_eval = model.evaluate_generator(test_generator, len(test_samples)/generator_batch)
-print(nvda_eval)
+        train_steps      =  ((len(train_samples)*2)/generator_batch) if add_flip_image else len(train_samples)/generator_batch
+        validation_steps = len(validation_samples)/generator_batch
 
-import datetime
-now = datetime.datetime.now()
-model_name = 'track1_nvda_{}_{}.h5'.format(now.hour, now.minute)
-print(model_name)
-model.save(model_name)
+        model = train_genarator_model(nvida_model(),
+                                    train_generator, train_steps,
+                                    validation_generator, validation_steps,
+                                    epochs=7)
+
+        nvda_eval = model.evaluate_generator(test_generator, len(test_samples)/generator_batch)
+        print(nvda_eval)
+
+        import datetime
+        now = datetime.datetime.now()
+        model_name = 'track1_nvda_{}_{}.h5'.format(now.hour, now.minute)
+        print(model_name)
+        model.save(model_name)
