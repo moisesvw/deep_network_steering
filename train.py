@@ -15,9 +15,10 @@ import sklearn
 import pandas as pd
 
 class Train:
-    def __init__(self, log_path, data_path):
+    def __init__(self, log_path, data_path, model_name):
         self.log_path = log_path
         self.data_path = data_path
+        self.model_name = model_name
 
     def generator(self, samples, batch_size=128, add_flip_image=False):
         """
@@ -137,7 +138,7 @@ class Train:
         """
         model = Sequential()
         model.add(Cropping2D(cropping=((65, 25), (0,0)), input_shape=(160,320,3)))
-        model.add(Lambda(normalize_pixels))
+        model.add(Lambda(self.normalize_pixels))
         model.add(Convolution2D(24, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
         model.add(Convolution2D(36, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
         model.add(Convolution2D(48, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
@@ -152,38 +153,30 @@ class Train:
         model.add(Dense(1))
         return model
 
-    def perform(self):
-        pass
-
-    def refactor_to_do(self):
+    def perform_training(self):
         data_source = {
-            "./track2d/driving_log.csv": "./track2d/",
+            self.log_path: self.data_path
         }
 
-        all_images_data = get_data(all_cameras=True, data_source=data_source)
+        all_images_data = self.get_data(all_cameras=True, data_source=data_source)
         train_samples, validation_samples = train_test_split(all_images_data, test_size=0.3)
         validation_samples, test_samples  = train_test_split(validation_samples, test_size=0.5)
 
         generator_batch = 64
         add_flip_image = True 
 
-        train_generator = generator(train_samples, batch_size=generator_batch, add_flip_image=add_flip_image)
-        validation_generator = generator(validation_samples, batch_size=generator_batch)
-        test_generator = generator(test_samples, batch_size=generator_batch)
+        train_generator = self.generator(train_samples, batch_size=generator_batch, add_flip_image=add_flip_image)
+        validation_generator = self.generator(validation_samples, batch_size=generator_batch)
+        test_generator = self.generator(test_samples, batch_size=generator_batch)
 
         train_steps      =  ((len(train_samples)*2)/generator_batch) if add_flip_image else len(train_samples)/generator_batch
         validation_steps = len(validation_samples)/generator_batch
 
-        model = train_genarator_model(nvida_model(),
+        model = self.train_genarator_model(self.nvida_model(),
                                     train_generator, train_steps,
                                     validation_generator, validation_steps,
                                     epochs=7)
 
         nvda_eval = model.evaluate_generator(test_generator, len(test_samples)/generator_batch)
         print(nvda_eval)
-
-        import datetime
-        now = datetime.datetime.now()
-        model_name = 'track1_nvda_{}_{}.h5'.format(now.hour, now.minute)
-        print(model_name)
-        model.save(model_name)
+        model.save(self.model_name)
