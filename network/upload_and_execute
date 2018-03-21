@@ -2,3 +2,8 @@ time rsync -avz -e "ssh -o StrictHostKeyChecking=no \
                 -o UserKnownHostsFile=/dev/null" \
                 --delete --files-from=system.txt \
                 --progress ./ jet:~/labs/drive
+
+ssh jet <<'ENDSSH'
+cd ~/labs/drive
+./execute_train
+ENDSSH
