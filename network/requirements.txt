@@ -1,1 +1,8 @@
 pytest==3.4.2
+opencv-python==3.4.0.12
+pandas
+numpy
+scipy
+scikit-image
+scikit-learn
+h5py

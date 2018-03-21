@@ -30,6 +30,7 @@ class Train:
         self.model_name = model_name
         self.model = None
         self.model_evaluation = None
+        self.history = None
 
     def generator(self, samples, batch_size=128, add_flip_image=False):
         """
@@ -103,7 +104,7 @@ class Train:
         optimizer = optimizers.Adam(lr=0.0006)
 
         model.compile(loss='mse', optimizer=optimizer)
-        model.fit_generator(train_generator,
+        self.history = model.fit_generator(train_generator,
                             steps_per_epoch=steps_per_epoch,
                             validation_data=validation_generator,
                             validation_steps=validation_steps,

@@ -1,0 +1,4 @@
+time rsync -avz -e "ssh -o StrictHostKeyChecking=no \
+                -o UserKnownHostsFile=/dev/null" \
+                --delete --files-from=system.txt \
+                --progress ./ jet:~/labs/drive
