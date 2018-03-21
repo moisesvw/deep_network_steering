@@ -9,10 +9,19 @@ if __name__ == '__main__':
 
     model_path = './output/drive_v1.h5'
     train = Train('./data/train/driving_log.csv', './data/train/', model_path,
-                    bath_size=64, epochs=2)
+                    bath_size=64, epochs=15, flip_images=True)
     train.perform_training()
 
     print("*******************************************************")
     print("*******************************************************")
-    print("Train end")
+    print("Train end\n\n\n")
+
+
+    print("*******************************************************")
+    print("*******************************************************")
+    print("Test Evaluation")
+
+    train.evaluate_model_on_test()
+
+    print("\n\n\n\n\n\n")
     sys.exit(0)
