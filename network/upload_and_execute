@@ -1,10 +1,19 @@
+ssh p <<'ENDSSH'
+mkdir -p /home/ubuntu/labs/drive
+ENDSSH
 time rsync -avz -e "ssh -o StrictHostKeyChecking=no \
                 -o UserKnownHostsFile=/dev/null" \
                 --exclude-from=exclude.txt \
                 --files-from=system.txt \
-                --progress ./ jet:~/labs/drive
+                --progress ./ p:~/labs/drive
+time rsync -avz -e "ssh -o StrictHostKeyChecking=no \
+                -o UserKnownHostsFile=/dev/null" \
+                --progress ./data/ p:~/labs/drive/data
 
-ssh jet <<'ENDSSH'
+
+ssh p <<'ENDSSH'
 cd ~/labs/drive
+source activate tensorflow_p36
 ./train
+
 ENDSSH

@@ -3,15 +3,16 @@ from train import Train
 import sys
 
 if __name__ == '__main__':
+    print("Training Start.....\n\n")
+    print("*******************************************************")
+    print("*******************************************************")
+
     model_path = './output/drive_v1.h5'
-    print("*******************************************************")
-    print("*******************************************************")
-    print("Training Will Start in Short.....\n\n")
-    
-    train = Train('./data/driving_log.csv', './data/', model_path,
-                    bath_size=10, epochs=1)
+    train = Train('./data/train/driving_log.csv', './data/train/', model_path,
+                    bath_size=64, epochs=2)
+    train.perform_training()
 
     print("*******************************************************")
     print("*******************************************************")
-    print("Training has been end")
+    print("Train end")
     sys.exit(0)
