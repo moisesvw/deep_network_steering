@@ -1,9 +1,17 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+from train import Train
+import sys
 
 if __name__ == '__main__':
-      model_path = '/opt/ml/test.h5' 
-    train = Train('/opt/ml/data/driving_log.csv', '/opt/ml/data/', model_path,
+    model_path = './output/drive_v1.h5'
+    print("*******************************************************")
+    print("*******************************************************")
+    print("Training Will Start in Short.....\n\n")
+    
+    train = Train('./data/driving_log.csv', './data/', model_path,
                     bath_size=10, epochs=1)
 
-    # A zero exit code causes the job to be marked a Succeeded.
+    print("*******************************************************")
+    print("*******************************************************")
+    print("Training has been end")
     sys.exit(0)
