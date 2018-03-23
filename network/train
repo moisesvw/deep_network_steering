@@ -12,9 +12,10 @@ if __name__ == '__main__':
         'train_data': './data/train/',
         'test_logs': './data/test/driving_log.csv',
         'test_data': './data/test/',
-        'model_path': './output/drive_v1.h5'
+        'model_path': './output/model_v1.h5',
+        'old_model_path': './output/model_v1.h5'
     }
-    train = Train(opts, bath_size=512, epochs=6, flip_images=True)
+    train = Train(opts, bath_size=512, epochs=6, flip_images=True, retrain=False)
     train.perform_training()
 
     print("*******************************************************")

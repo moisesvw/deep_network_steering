@@ -26,12 +26,14 @@ def normalize_pixels(x):
     return x / 255.0 - 0.5
 
 class Train:
-    def __init__(self, opts, bath_size=64, epochs=1, flip_images=False):
+    def __init__(self, opts, bath_size=64, epochs=1, flip_images=False, retrain=False):
         self.log_path = opts['train_logs']
         self.data_path = opts['train_data']
         self.test_log_path = opts['test_logs']
         self.tes_data_path = opts['test_data']
         self.model_name = opts['model_path']
+        self.old_model_name = opts.get('old_model_path')
+        self.retrain_model = retrain
 
         self.bath_size = bath_size
         self.epochs = epochs
@@ -69,7 +71,7 @@ class Train:
                     image = cv2.imread(image_path)
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
                     steering = float(batch_sample[2])
-                    if steering > 0.25:
+                    if steering > 0.24:
                         if batch_sample[1] == 'L':
                             steering+= 0.21
                         elif batch_sample[1] == 'R':
@@ -106,6 +108,8 @@ class Train:
         optimizer = optimizers.Adam(lr=0.0002)
 
         model.compile(loss='mse', optimizer=optimizer)
+        if self.retrain_model:
+            model = load_model(self.old_model_name)
         self.history = model.fit_generator(train_generator,
                             steps_per_epoch=steps_per_epoch,
                             validation_data=validation_generator,
@@ -160,11 +164,11 @@ class Train:
         model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
         model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
         model.add(Flatten())
-        model.add(Dropout(0.25))
+        model.add(Dropout(0.2))
         model.add(Dense(1164))
-        model.add(Dropout(0.25))
+        model.add(Dropout(0.2))
         model.add(Dense(100))
-        model.add(Dropout(0.5))
+        model.add(Dropout(0.25))
         model.add(Dense(50))
         model.add(Dense(10))
         model.add(Dense(1))
@@ -175,11 +179,11 @@ class Train:
             self.test_log_path: self.tes_data_path
         }
 
-        if self.model == None:
+        if not self.model:
             self.model = load_model(self.model_name)
 
         test_data = self.get_data(all_cameras=False, data_source=data_source)
-        test_samples, _ = test_data
+        test_samples = test_data
         generator_batch = self.bath_size
         test_generator = self.generator(test_samples, batch_size=generator_batch)
         test_result = self.model.evaluate_generator(test_generator, len(test_samples)/generator_batch)

@@ -7,7 +7,11 @@ I've created a shell script that synchronizes the network and the data in a remo
 You can download the [Simulator](https://github.com/udacity/self-driving-car-sim/releases) from Udacity Repo to collect data for training and test the model. For more information, please refer to the Udacity Self-Driving Car Nanodegree [repo](https://github.com/udacity/CarND-Behavioral-Cloning-P3). Once you obtain data, this project assumes you put the data in the directory /data/train and /data/test.
 
 To run the training execute this command `./upload_and_execute`, this will run the network on the remote server, feel free to change the host `p` for your host or IP address host.
- 
+
+Results of training are shown in the next video
+
+[![Results](https://img.youtube.com/vi/87LeecbK604/0.jpg)](https://www.youtube.com/watch?v=87LeecbK604)
+
  --
 
 **Behavioral Cloning Project**
