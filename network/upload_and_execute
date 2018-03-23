@@ -22,3 +22,5 @@ time rsync -avz -e "ssh -o StrictHostKeyChecking=no \
                 -o UserKnownHostsFile=/dev/null" \
                 --progress p:~/labs/drive/output/drive_v1.h5 ./output/drive_v1.h5
 
+#use this line to test the model in the simulator
+#python drive.py ./output/drive_v1.h5

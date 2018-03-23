@@ -26,14 +26,16 @@ def normalize_pixels(x):
     return x / 255.0 - 0.5
 
 class Train:
-    def __init__(self, log_path, data_path, model_name, bath_size=64,
-                 epochs=1, flip_images=False):
-        self.log_path = log_path
-        self.data_path = data_path
+    def __init__(self, opts, bath_size=64, epochs=1, flip_images=False):
+        self.log_path = opts['train_logs']
+        self.data_path = opts['train_data']
+        self.test_log_path = opts['test_logs']
+        self.tes_data_path = opts['test_data']
+        self.model_name = opts['model_path']
+
         self.bath_size = bath_size
         self.epochs = epochs
         self.flip_images = flip_images
-        self.model_name = model_name
         self.model = None
         self.model_evaluation = None
         self.history = None
@@ -67,12 +69,12 @@ class Train:
                     image = cv2.imread(image_path)
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
                     steering = float(batch_sample[2])
-
-                    if batch_sample[1] == 'L':
-                        steering+= 0.23
-                    elif batch_sample[1] == 'R':
-                        steering-= 0.23
-    
+                    if steering > 0.25:
+                        if batch_sample[1] == 'L':
+                            steering+= 0.21
+                        elif batch_sample[1] == 'R':
+                            steering-= 0.21
+        
                     images.append(image)
                     angles.append(steering)
 
@@ -101,14 +103,15 @@ class Train:
         a keras trained model
         """
 
-        optimizer = optimizers.Adam(lr=0.0006)
+        optimizer = optimizers.Adam(lr=0.0002)
 
         model.compile(loss='mse', optimizer=optimizer)
         self.history = model.fit_generator(train_generator,
                             steps_per_epoch=steps_per_epoch,
                             validation_data=validation_generator,
                             validation_steps=validation_steps,
-                            epochs=epochs)
+                            epochs=epochs,
+                            verbose=2)
         return model
 
     def get_data(self, all_cameras=False, data_source={"./tmp/driving_log.csv": "./tmp/images/"}):
@@ -130,7 +133,7 @@ class Train:
                 next(reader, None)
                 for line in reader:
                     # add Left and Right cameras randomly
-                    if all_cameras and random.random() > 0.7:
+                    if all_cameras and random.random() > 0.5:
                         samples.append([line[CENTER], 'C',line[STEERING], directory ])
                         samples.append([line[LEFT],   'L',line[STEERING], directory ])
                         samples.append([line[RIGTH],  'R',line[STEERING], directory ])
@@ -157,9 +160,9 @@ class Train:
         model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
         model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
         model.add(Flatten())
-        model.add(Dropout(0.4))
+        model.add(Dropout(0.25))
         model.add(Dense(1164))
-        model.add(Dropout(0.4))
+        model.add(Dropout(0.25))
         model.add(Dense(100))
         model.add(Dropout(0.5))
         model.add(Dense(50))
@@ -169,12 +172,14 @@ class Train:
 
     def evaluate_model_on_test(self):
         data_source = {
-            './data/test/driving_log.csv': './data/test/'
+            self.test_log_path: self.tes_data_path
         }
 
-        test_data = self.get_data(all_cameras=False, data_source=data_source)
-        test_samples, test_val_samples = train_test_split(test_data, test_size=0.5)
+        if self.model == None:
+            self.model = load_model(self.model_name)
 
+        test_data = self.get_data(all_cameras=False, data_source=data_source)
+        test_samples, _ = test_data
         generator_batch = self.bath_size
         test_generator = self.generator(test_samples, batch_size=generator_batch)
         test_result = self.model.evaluate_generator(test_generator, len(test_samples)/generator_batch)

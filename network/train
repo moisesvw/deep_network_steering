@@ -7,9 +7,14 @@ if __name__ == '__main__':
     print("*******************************************************")
     print("*******************************************************")
 
-    model_path = './output/drive_v1.h5'
-    train = Train('./data/train/driving_log.csv', './data/train/', model_path,
-                    bath_size=64, epochs=15, flip_images=True)
+    opts = {
+        'train_logs': './data/train/driving_log.csv',
+        'train_data': './data/train/',
+        'test_logs': './data/test/driving_log.csv',
+        'test_data': './data/test/',
+        'model_path': './output/drive_v1.h5'
+    }
+    train = Train(opts, bath_size=512, epochs=6, flip_images=True)
     train.perform_training()
 
     print("*******************************************************")
