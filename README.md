@@ -1,4 +1,4 @@
-# End to End DeepNetwork implementatino for Driving Steering
+# End to End DeepNetwork implementation for Driving Steering
 
 This projects I built a deep learning system that learns to steer car wheels in a Simulator.
 
